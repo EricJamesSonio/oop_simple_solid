@@ -49,7 +49,7 @@ public class OrderRepository {
                     sb.append(o.getItems().get(i).getMenuId()).append(":").append(o.getItems().get(i).getQty());
                     if (i<o.getItems().size()-1) sb.append(";");
                 }
-                w.println(o.getId()+"\\|"+table+"\\|"+o.getStatus()+"\\|"+o.getTotal()+"\\|"+o.getDiscountType()+"\\|"+sb.toString()+"\\|"+o.getCreatedBy());
+                w.println(o.getId()+"|"+table+"|"+o.getStatus()+"|"+o.getTotal()+"|"+o.getDiscountType()+"|"+sb.toString()+"|"+o.getCreatedBy());
             }
         }catch(Exception e){}
     }

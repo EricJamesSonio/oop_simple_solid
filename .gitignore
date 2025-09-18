@@ -1,0 +1,7 @@
+*.class
+
+# Maven
+target/
+
+# Gradle
+build/

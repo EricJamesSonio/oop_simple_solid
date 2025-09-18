@@ -27,7 +27,7 @@ public class TableRepository {
     }
     public void saveAll(List<Table> items){
         try(PrintWriter w=new PrintWriter(new FileWriter(path,false))){
-            for(Table t: items) w.println(t.getId()+"\\|"+t.getCapacity()+"\\|"+t.getStatus()+"\\|"+t.getPeople());
+            for(Table t: items) w.println(t.getId()+"|"+t.getCapacity()+"|"+t.getStatus()+"|"+t.getPeople());
         }catch(Exception e){}
     }
 }

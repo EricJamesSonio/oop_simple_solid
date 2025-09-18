@@ -1,18 +1,17 @@
 package POS.ui.tui;
 
-import java.util.Scanner;
-import java.util.List;
-
+import java.util.*;
+import java.io.*;
+import POS.orders.Models.Order;
+import POS.tables.Models.Table;
+import POS.orders.Services.OrderService;
+import POS.tables.Services.TableService;
 import POS.ui.UI;
 import POS.menu.Services.MenuService;
-import POS.tables.Services.TableService;
-import POS.orders.Services.OrderService;
 import POS.reporting.Services.SalesService;
 import POS.employee.Services.EmployeeService;
 import POS.auth.Services.AuthService;
 import POS.menu.Base.MenuItem;
-import POS.orders.Models.Order;
-import POS.tables.Models.Table;
 import POS.employee.Models.Employee;
 
 public class TUIApplication implements UI {
@@ -86,13 +85,35 @@ public class TUIApplication implements UI {
         while (true) {
             clear();
             System.out.println("=== CASHIER DASHBOARD ===");
-            System.out.println("1) Create Order\n2) View My Sales\n3) View Orders\n0) Logout");
+            System.out.println("1) Create Order\n2) View My Sales\n3) View My Orders\n4) Table Management\n5) Order Management\n0) Logout");
             System.out.print("Choose: ");
             String c = sc.nextLine().trim();
             switch (c) {
                 case "1": createOrder(false); break;
                 case "2": salesMenu(false); break;
-                case "3": viewOrders(); break;
+                case "3": viewMyOrders(); break;
+                case "4": tableMenuCashier(); break;
+                case "5": cashierOrderMenu(); break;
+                case "0": return;
+                default: pause();
+            }
+        }
+    }
+
+    private void tableMenuCashier() {
+        while (true) {
+            clear();
+            System.out.println("--- Table Management ---");
+            System.out.println("1) View Tables");
+            System.out.println("2) Assign Customer to Table");
+            System.out.println("3) Mark Table as Clean");
+            System.out.println("0) Back");
+            System.out.print("Choose: ");
+            String c = sc.nextLine().trim();
+            switch (c) {
+                case "1": viewTables(); break;
+                case "2": assignCustomer(); break;
+                case "3": cleanTable(); break;
                 case "0": return;
                 default: pause();
             }
@@ -193,10 +214,23 @@ public class TUIApplication implements UI {
         System.out.print("Enter table id to assign: ");
         String id = sc.nextLine().trim();
         Table t = tableService.findById(Integer.parseInt(id));
-        if (t==null) { System.out.println("Not found"); pause(); return; }
-        if (!t.getStatus().equals("AVAILABLE")) { System.out.println("Table not available"); pause(); return; }
-        System.out.print("People count: "); int pc = Integer.parseInt(sc.nextLine().trim());
-        if (!tableService.assign(Integer.parseInt(id), pc)) System.out.println("Capacity exceeded"); else System.out.println("Assigned");
+        if (t == null) { 
+            System.out.println("Table not found"); 
+            pause(); 
+            return; 
+        }
+        if (!t.getStatus().equals("AVAILABLE")) { 
+            System.out.println("Table is not available. Current status: " + t.getStatus()); 
+            pause(); 
+            return; 
+        }
+        System.out.print("Number of people: "); 
+        int pc = Integer.parseInt(sc.nextLine().trim());
+        if (tableService.assign(Integer.parseInt(id), pc)) {
+            System.out.println("Table " + id + " assigned successfully!");
+        } else {
+            System.out.println("Failed to assign table. Please check table capacity.");
+        }
         pause();
     }
 
@@ -243,6 +277,81 @@ public class TUIApplication implements UI {
         }
     }
 
+    private void cashierOrderMenu() {
+        while (true) {
+            clear();
+            System.out.println("--- Order Management (My Orders) ---");
+            System.out.println("1) View My Orders\n2) Checkout Order\n3) Update Order Status\n0) Back");
+            System.out.print("Choose: ");
+            String c = sc.nextLine().trim();
+            switch (c) {
+                case "1": viewMyOrders(); break;
+                case "2": checkoutMyOrder(); break;
+                case "3": updateMyOrder(); break;
+                case "0": return;
+                default: pause();
+            }
+        }
+    }
+
+    private void viewMyOrders() {
+        clear();
+        System.out.println("=== MY ORDERS ===");
+        boolean found = false;
+        for (Order o : orderService.getAll()) {
+            if (o.getCreatedBy().equals(loggedUsername)) {
+                System.out.println(o.brief());
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No orders found.");
+        }
+        pause();
+    }
+
+    private void checkoutMyOrder() {
+        viewMyOrders();
+        System.out.print("Enter order id to checkout: ");
+        String id = sc.nextLine().trim();
+        try {
+            Order order = orderService.findById(Integer.parseInt(id));
+            if (order != null && order.getCreatedBy().equals(loggedUsername)) {
+                if (orderService.checkout(Integer.parseInt(id), loggedUsername)) {
+                    System.out.println("Checkout complete.");
+                } else {
+                    System.out.println("Checkout failed or already complete.");
+                }
+            } else {
+                System.out.println("Order not found or you don't have permission to checkout this order.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid order ID.");
+        }
+        pause();
+    }
+
+    private void updateMyOrder() {
+        viewMyOrders();
+        System.out.print("Enter order id to update status to REFUNDED: ");
+        String id = sc.nextLine().trim();
+        try {
+            Order order = orderService.findById(Integer.parseInt(id));
+            if (order != null && order.getCreatedBy().equals(loggedUsername)) {
+                if (orderService.refund(Integer.parseInt(id))) {
+                    System.out.println("Order marked as REFUNDED.");
+                } else {
+                    System.out.println("Failed to update order status.");
+                }
+            } else {
+                System.out.println("Order not found or you don't have permission to update this order.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid order ID.");
+        }
+        pause();
+    }
+
     private void viewOrders() {
         clear();
         for (Order o : orderService.getAll()) {
@@ -276,7 +385,20 @@ public class TUIApplication implements UI {
         viewOrders();
         System.out.print("Enter order id to checkout: ");
         String id = sc.nextLine().trim();
-        if (orderService.checkout(Integer.parseInt(id), loggedUsername)) System.out.println("Checkout complete."); else System.out.println("Checkout failed or already complete.");
+        try {
+            Order order = orderService.findById(Integer.parseInt(id));
+            if (order != null && order.getCreatedBy().equals(loggedUsername)) {
+                if (orderService.checkout(Integer.parseInt(id), loggedUsername)) {
+                    System.out.println("Checkout complete.");
+                } else {
+                    System.out.println("Checkout failed or already complete.");
+                }
+            } else {
+                System.out.println("Order not found or you don't have permission to checkout this order.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid order ID.");
+        }
         pause();
     }
 
@@ -284,7 +406,20 @@ public class TUIApplication implements UI {
         viewOrders();
         System.out.print("Enter order id to update status to REFUNDED: ");
         String id = sc.nextLine().trim();
-        if (orderService.refund(Integer.parseInt(id))) System.out.println("Refunded."); else System.out.println("Failed.");
+        try {
+            Order order = orderService.findById(Integer.parseInt(id));
+            if (order != null && order.getCreatedBy().equals(loggedUsername)) {
+                if (orderService.refund(Integer.parseInt(id))) {
+                    System.out.println("Order marked as REFUNDED.");
+                } else {
+                    System.out.println("Failed to update order status.");
+                }
+            } else {
+                System.out.println("Order not found or you don't have permission to update this order.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid order ID.");
+        }
         pause();
     }
 
