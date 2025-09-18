@@ -1,0 +1,2 @@
+1\|4\|AVAILABLE\|0
+2\|2\|AVAILABLE\|0

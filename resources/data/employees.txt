@@ -1,0 +1,2 @@
+1|Admin User|ADMIN
+2|Cashier One|CASHIER

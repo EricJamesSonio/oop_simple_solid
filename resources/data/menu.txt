@@ -1,0 +1,2 @@
+1|Match|100.0|Hot match|2026-01-01
+2|Cappuccino|120.0|Milk foam coffee|2026-01-01
